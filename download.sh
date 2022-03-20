@@ -1,9 +1,3 @@
-#!/usr/bin/env bash
-
-# Download QuAC
-mkdir -p QuAC_data
-wget https://s3.amazonaws.com/my89public/quac/train.json -O QuAC_data/train.json
-wget https://s3.amazonaws.com/my89public/quac/val.json -O QuAC_data/dev.json
 
 # Download CoQA
 mkdir -p CoQA

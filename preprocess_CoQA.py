@@ -35,8 +35,8 @@ trn_file = 'CoQA/train.json'
 dev_file = 'CoQA/dev.json'
 wv_file = args.wv_file
 wv_dim = args.wv_dim
-nlp = spacy.load('en', disable=['parser'])
-
+nlp = spacy.load('en_core_web_sm', disable=['parser'])
+print("done")
 random.seed(args.seed)
 np.random.seed(args.seed)
 
@@ -92,9 +92,9 @@ print(train)
 
 trC_iter = (pre_proc(c) for c in train_context)
 trQ_iter = (pre_proc(q) for q in train.question)
-trC_docs = [doc for doc in nlp.pipe(trC_iter, batch_size=64, n_threads=args.threads)]
-trQ_docs = [doc for doc in nlp.pipe(trQ_iter, batch_size=64, n_threads=args.threads)]
-
+trC_docs = [doc for doc in nlp.pipe(trC_iter, batch_size=64, n_process=args.threads)]
+trQ_docs = [doc for doc in nlp.pipe(trQ_iter, batch_size=64, n_process=args.threads)]
+print(trC_docs)
 # tokens
 trC_tokens = [[normalize_text(w.text) for w in doc] for doc in trC_docs]
 trQ_tokens = [[normalize_text(w.text) for w in doc] for doc in trQ_docs]
@@ -150,6 +150,7 @@ def build_train_vocab(questions, contexts): # vocabulary will also be sorted acc
 
 # vocab
 tr_vocab = build_train_vocab(trQ_tokens, trC_tokens)
+print(tr_vocab)
 trC_ids = token2id(trC_tokens, tr_vocab, unk_id=1)
 trQ_ids = token2id(trQ_tokens, tr_vocab, unk_id=1)
 trQ_tokens = [["<S>"] + doc + ["</S>"] for doc in trQ_tokens]
@@ -173,9 +174,11 @@ meta = {
     'vocab': tr_vocab,
     'embedding': tr_embedding.tolist()
 }
+
 with open('CoQA/train_meta.msgpack', 'wb') as f:
     msgpack.dump(meta, f)
-
+del meta
+del tr_embedding
 prev_CID, first_question = -1, []
 for i, CID in enumerate(train.context_idx):
     if not (CID == prev_CID):
@@ -204,7 +207,7 @@ result = {
 }
 with open('CoQA/train_data.msgpack', 'wb') as f:
     msgpack.dump(result, f)
-
+del result
 log.info('saved training to disk.')
 
 #==========================================================
@@ -294,7 +297,6 @@ def build_dev_vocab(questions, contexts): # most vocabulary comes from tr_vocab
     vocab = tr_vocab + new_vocab
     log.info('train vocab {0}, total vocab {1}'.format(len(tr_vocab), len(vocab)))
     return vocab
-
 # vocab
 dev_vocab = build_dev_vocab(devQ_tokens, devC_tokens) # tr_vocab is a subset of dev_vocab
 devC_ids = token2id(devC_tokens, dev_vocab, unk_id=1)
